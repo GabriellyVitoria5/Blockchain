@@ -45,9 +45,9 @@ class Blockchain:
         """
 
         self.current_transactions.append({
-            'sender': sender,
-            'recipient': recipient,
-            'amount': amount,
+            'sender': sender, # Quem enviou
+            'recipient': recipient, # Quem recebeu
+            'amount': amount, # O que é enviado na transação, aqui é a quantidade
         })
         return self.last_block['index'] + 1
     

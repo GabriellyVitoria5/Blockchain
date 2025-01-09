@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Test</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+</head>
+<body>
+
+    <h1>API Blockchain</h1>
+
+    <!-- Minerar -->
+    <div class="section">
+        <h2>Minerar</h2>
+        <button onclick="mineBlock()">Minerar</button>
+    </div>
+
+    <!-- Criar transação -->
+    <div class="section">
+        <h2>Criar transação</h2>
+        <label for="sender">Remetente</label>
+        <input type="text" id="sender" placeholder="ex: João">
+        <label for="recipient">Destinatário</label>
+        <input type="text" id="recipient" placeholder="ex: Maria">
+        <label for="amount">Valor</label>
+        <input type="number" id="amount" placeholder="ex: 50">
+        <button onclick="createTransaction()">Criar transação</button>
+    </div>
+
+    <!-- Ver Blockchain -->
+    <div class="section">
+        <h2>Visualizar toda a Blockchain</h2>
+        <button onclick="getBlockchain()">Ver Blockchain</button>
+    </div>
+
+    <!-- Registrar blocos -->
+    <div class="section">
+        <h2>Registrar nós</h2>
+        <label for="nodes">Nós (separados por vírgula)</label>
+        <input type="text" id="nodes" placeholder="ex: http://127.0.0.1:5001, http://127.0.0.1:5002">
+        <button onclick="registerNodes()">Registrar nós</button>
+    </div>
+
+    <!-- Resolvendo conflitos -->
+    <div class="section">
+        <h2>Resolvendo conflitos</h2>
+        <button onclick="resolveConflicts()">Resolvendo conflitos</button>
+    </div>
+
+    <!-- Saída -->
+    <div class="section">
+        <h2>Saída</h2>
+        <div id="output">Resultado vai aparecer aqui...</div>
+    </div>
+</body>
+</html>
