@@ -35,15 +35,6 @@ class Blockchain:
 
     # Cria uma nova transação que será incluída no próximo bloco minerado
     def new_transaction(self, sender, recipient, amount):
-        """
-        Creates a new transaction to go into the next mined Block
-
-        :param sender: Address of the Sender
-        :param recipient: Address of the Recipient
-        :param amount: Amount
-        :return: The index of the Block that will hold this transaction
-        """
-
         self.current_transactions.append({
             'sender': sender, # Quem enviou
             'recipient': recipient, # Quem recebeu
@@ -63,15 +54,8 @@ class Blockchain:
     def last_block(self):
         return self.chain[-1]
     
-    # Implementa o algoritmo de Prova de Trabalho (PoW)
+    # Implementa o algoritmo de proof of work (PoW) para gerar uma hash com 4 zeros no começo
     def proof_of_work(self, last_block):
-        """
-        Simple Proof of Work Algorithm:
-
-         - Find a number p' such that hash(pp') contains leading 4 zeroes
-         - Where p is the previous proof, and p' is the new proof
-        """
-
         last_proof = last_block['proof']
         last_hash = self.hash(last_block)
 
@@ -98,12 +82,13 @@ class Blockchain:
             print(f'{last_block}')
             print(f'{block}')
             print("\n-----------\n")
-            # Check that the hash of the block is correct
+            
+            # Verificar se a hash do bloco está correta
             last_block_hash = self.hash(last_block)
             if block['previous_hash'] != last_block_hash:
                 return False
 
-            # Check that the Proof of Work is correct
+            # Verificar se a proof of work está correta
             if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
                 return False
 
@@ -128,7 +113,7 @@ class Blockchain:
                 length = response.json()['length']
                 chain = response.json()['chain']
 
-                # Check if the length is longer and the chain is valid
+                # Verificar se a nova cadeia é maior e é válida
                 if length > max_length and self.valid_chain(chain):
                     max_length = length
                     new_chain = chain
@@ -150,11 +135,11 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instanciar do blockchain
 blockchain = Blockchain()
 
-
 # Rota para minerar um novo bloco
 @app.route('/mine', methods=['GET'])
 def mine():
-    # We run the proof of work algorithm to get the next proof...
+    
+    # Usar o algoritmo de proof of work no último bloco para pegar a próxima prova
     last_block = blockchain.last_block
     proof = blockchain.proof_of_work(last_block)
 
@@ -170,7 +155,7 @@ def mine():
     block = blockchain.new_block(proof, previous_hash)
 
     response = {
-        'message': "New Block Forged",
+        'message': "Novo bloco criado",
         'index': block['index'],
         'transactions': block['transactions'],
         'proof': block['proof'],
@@ -186,12 +171,12 @@ def new_transaction():
     # Valida os dados
     required = ['sender', 'recipient', 'amount']
     if not all(k in values for k in required):
-        return 'Missing values', 400
+        return 'Valores estão faltando', 400
 
     # Criar a transação
     index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
 
-    response = {'message': f'Transaction will be added to Block {index}'}
+    response = {'message': f'Transações serão criadas no Bloco {index}'}
     return jsonify(response), 201
 
 
@@ -211,13 +196,13 @@ def register_nodes():
 
     nodes = values.get('nodes')
     if nodes is None:
-        return "Error: Please supply a valid list of nodes", 400
+        return "Erro: Favor informar uma lista válida de nós", 400
 
     for node in nodes:
         blockchain.register_node(node)
 
     response = {
-        'message': 'New nodes have been added',
+        'message': 'Novos nós foram adicionados',
         'total_nodes': list(blockchain.nodes),
     }
     return jsonify(response), 201
@@ -229,16 +214,15 @@ def consensus():
 
     if replaced:
         response = {
-            'message': 'Our chain was replaced',
+            'message': 'A cadeia foi substituída',
             'new_chain': blockchain.chain
         }
     else:
         response = {
-            'message': 'Our chain is authoritative',
+            'message': 'A cadeia está completa',
             'chain': blockchain.chain
         }
 
     return jsonify(response), 200
-
 
 app.run(debug=True)
