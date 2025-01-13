@@ -1,10 +1,11 @@
 import hashlib
 import json
 from time import time
+from urllib.parse import urlparse
 from uuid import uuid4
 import requests
 from flask import Flask, jsonify, request
-from flask_cors import CORS
+from argparse import ArgumentParser
 
 # Classe que implementa a estrutura básica do blockchain
 class Blockchain:
@@ -16,6 +17,17 @@ class Blockchain:
 
         # Primeiro bloco da cadeia
         self.new_block(previous_hash='1', proof=100)
+
+    # Adicionar um novo nó na lista 
+    def register_node(self, address):
+        parsed_url = urlparse(address)
+        if parsed_url.netloc:
+            self.nodes.add(parsed_url.netloc)
+        elif parsed_url.path:
+            # Aceitar URL do tipo '192.168.0.5:5000'.
+            self.nodes.add(parsed_url.path)
+        else:
+            raise ValueError('Invalid URL')
 
     # Criar um novo bloco e adicionar na cadeia com base na prova criada pelo algoritmo e o bloco anterior
     def new_block(self, proof, previous_hash):
@@ -127,7 +139,6 @@ class Blockchain:
     
 # Criação de um nó Flask para expor a API
 app = Flask(__name__)
-CORS(app)
 
 # Criar endereço único para o nó
 node_identifier = str(uuid4()).replace('-', '')
@@ -225,4 +236,13 @@ def consensus():
 
     return jsonify(response), 200
 
-app.run(debug=True)
+if __name__ == '__main__':
+
+    # Definir um argumento opcional para especificar a porta onde a aplicação será executada
+    parser = ArgumentParser()
+    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
+    args = parser.parse_args()
+    port = args.port
+
+    # Inicia a aplicação com host e porta definidos
+    app.run(host='0.0.0.0', port=port)
