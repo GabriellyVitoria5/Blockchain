@@ -326,7 +326,7 @@ if __name__ == '__main__':
 
     # Definir um argumento opcional para especificar a porta onde a aplicação será executada
     parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
+    parser.add_argument('-p', '--port', default=5001, type=int, help='port to listen on')
     args = parser.parse_args()
     port = args.port
 

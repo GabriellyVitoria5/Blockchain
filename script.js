@@ -37,47 +37,63 @@ async function getAllNodes() {
     }
 }
 
+// Buscar nó selecionado no combo box para fazer operações (como transação e mineração)
+function getSelectedNode() {
+    const selectedNode = document.getElementById('nodeSelect').value;
+    if (!selectedNode) {
+        alert('Por favor, selecione um nó.');
+        throw new Error('Nenhum nó selecionado.');
+    }
+    return `http://${selectedNode}`;
+}
+
 async function mineBlock() {
-    const response = await fetch(`${baseUrl}/mine`);
-    const data = await response.json();
-    document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+    try {
+        const selectedNode = getSelectedNode();
+        const response = await fetch(`${selectedNode}/mine`);
+        const data = await response.json();
+        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+    } catch (error) {
+        console.error('Erro ao minerar bloco:', error);
+    }    
 }
 
+// Criar uma transação
 async function createTransaction() {
-    const sender = document.getElementById('sender').value;
-    const recipient = document.getElementById('recipient').value;
-    const amount = document.getElementById('amount').value;
+    try {
+        const selectedNode = getSelectedNode();
+        const sender = document.getElementById('sender').value;
+        const recipient = document.getElementById('recipient').value;
+        const amount = document.getElementById('amount').value;
 
-    const response = await fetch(`${baseUrl}/transactions/new`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender, recipient, amount })
-    });
+        const response = await fetch(`${selectedNode}/transactions/new`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender, recipient, amount })
+        });
 
-    const data = await response.json();
-    document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+        const data = await response.json();
+        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+    } catch (error) {
+        console.error('Erro ao criar transação:', error);
+    }
 }
 
+// Obter a blockchain completa de um nó na rede
 async function getBlockchain() {
-    const response = await fetch(`${baseUrl}/chain`);
-    const data = await response.json();
-    document.getElementById('output').innerText = JSON.stringify(data, null, 2);
-}
-
-async function registerNodes() {
-    const nodes = document.getElementById('nodes').value.split(',').map(node => node.trim());
-    const response = await fetch(`${baseUrl}/nodes/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodes })
-    });
-
-    const data = await response.json();
-    document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+    try {
+        const selectedNode = getSelectedNode();
+        const response = await fetch(`${selectedNode}/chain`);
+        const data = await response.json();
+        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+    } catch (error) {
+        console.error('Erro ao obter a blockchain:', error);
+    }
 }
 
 async function resolveConflicts() {
-    const response = await fetch(`${baseUrl}/nodes/resolve`);
+    const selectedNode = getSelectedNode();
+    const response = await fetch(`${selectedNode}/nodes/resolve`);
     const data = await response.json();
     document.getElementById('output').innerText = JSON.stringify(data, null, 2);
 }
