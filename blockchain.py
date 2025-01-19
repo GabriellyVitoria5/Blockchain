@@ -139,6 +139,75 @@ class Blockchain:
 
         return False
 
+    # Resolver conflitos nas cadeias dos nós pelo algoritmo de consenso da maioria dos nós (50% + 1)
+    def resolve_conflicts_majority(self):
+        neighbours = self.nodes
+        valid_hashes = {}
+        nodes_chains = []  # Armazenar blockchains dos nós na rede
+
+        # Buscar as blockchains dos nós disponíveis na rede
+        for node in neighbours:
+            try:
+                response = requests.get(f'http://{node}/chain')
+
+                # Armazenar a blockchain e encontrada e calcular as hashes de todos os blocos da cadeia
+                if response.status_code == 200:
+                    chain = response.json()['chain']
+                    nodes_chains.append(chain)
+                    chain_hashes = [self.hash(block) for block in chain]
+
+                    # Armazenar voto e posição nas hashes dos blocos
+                    for index, hash_value in enumerate(chain_hashes):
+
+                        # Hashes encontradas receberão votos e terão sua posição atualizada
+                        if hash_value not in valid_hashes:
+                            valid_hashes[hash_value] = {"votes": 1, "position": index}
+                        else:
+                            valid_hashes[hash_value]["votes"] += 1
+                            valid_hashes[hash_value]["position"] = max(valid_hashes[hash_value]["position"], index)
+
+            except Exception as e:
+                print(f"Erro ao conectar com {node}: {e}")
+
+        if not valid_hashes:
+            return False 
+
+        # Encontrar hashes com mais votos
+        max_votes = max(hash_data["votes"] for hash_data in valid_hashes.values())
+        candidate_hashes = [
+            hash_value
+            for hash_value, hash_data in valid_hashes.items()
+            if hash_data["votes"] == max_votes
+        ]
+
+        # Entre as hashes com mais votos, selecionar a mais recente (maior posição)
+        most_valid_hash = max(
+            candidate_hashes,
+            key=lambda h: valid_hashes[h]["position"],
+        )
+        print(f"Hash mais validada: {most_valid_hash} com {max_votes} votos e posição {valid_hashes[most_valid_hash]['position']}.")
+
+        # Encontrar todas as blockchains que contêm o bloco de consenso
+        valid_chains = [
+            chain for chain in nodes_chains
+            if most_valid_hash in [self.hash(block) for block in chain]
+        ]
+
+        if not valid_chains:
+            return False # Nenhuma blockchain contém o bloco de consenso
+
+        # Escolher a blockchain mais longa entre as válidas
+        new_chain = max(valid_chains, key=len)
+
+        # Substituir a cadeia local se a nova cadeia for mais longa
+        if len(new_chain) > len(self.chain):
+            self.chain = new_chain
+            print("Cadeia substituída pela maioria")
+            return True
+
+        print("Cadeia atual não foi atualizada.")
+        return False
+
     # Retornar todos os nós da cadeia
     def get_all_nodes(self):
         return self.nodes
@@ -281,6 +350,24 @@ def consensus():
 
     return jsonify(response), 200
 
+# Rota para aplicar o algoritmo de consenso
+@app.route('/nodes/resolve/majority', methods=['GET'])
+def consensus_majority():
+    replaced = blockchain.resolve_conflicts_majority()
+
+    if replaced:
+        response = {
+            'message': 'A cadeia foi substituída',
+            'new_chain': blockchain.chain
+        }
+    else:
+        response = {
+            'message': 'A cadeia está completa',
+            'chain': blockchain.chain
+        }
+
+    return jsonify(response), 200
+
 # Rota para retornar todos os nós registrados
 @app.route('/nodes/all', methods=['GET'])
 def get_nodes_blockchain():
@@ -326,7 +413,7 @@ if __name__ == '__main__':
 
     # Definir um argumento opcional para especificar a porta onde a aplicação será executada
     parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5001, type=int, help='port to listen on')
+    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
     args = parser.parse_args()
     port = args.port
 
