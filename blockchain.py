@@ -1,11 +1,12 @@
 import hashlib
 import json
-from time import time
+import time
 from urllib.parse import urlparse
 from uuid import uuid4
 import requests
 from flask import Flask, jsonify, request
 from argparse import ArgumentParser
+import threading
 
 # Classe que implementa a estrutura básica do blockchain
 class Blockchain:
@@ -33,7 +34,7 @@ class Blockchain:
     def new_block(self, proof, previous_hash):
         block = {
             'index': len(self.chain) + 1,
-            'timestamp': time(),
+            'timestamp': time.time(),
             'transactions': self.current_transactions, # Transações incluídas no bloco
             'proof': proof,
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
@@ -136,6 +137,10 @@ class Blockchain:
             return True
 
         return False
+
+    # Retornar todos os nós da cadeia
+    def get_all_nodes(self):
+        return self.nodes
     
 # Criação de um nó Flask para expor a API
 app = Flask(__name__)
@@ -143,8 +148,46 @@ app = Flask(__name__)
 # Criar endereço único para o nó
 node_identifier = str(uuid4()).replace('-', '')
 
-# Instanciar do blockchain
+# Instanciar a blockchain
 blockchain = Blockchain()
+
+# Iniciar o servidor Flask em uma thread separada
+def start_flask(port):
+    app.run(host='0.0.0.0', port=port)
+
+# Todos os nós criados irão informar o nó de referência sobre sua existência
+def connect_nodes_to_reference_node():
+    reference_node = "127.0.0.1:5000"  # Nó de referência na porta 5000 por padrão
+    try:
+        # Solicita a lista de nós ao nó inicial
+        response = requests.get(f'http://{reference_node}/nodes/all')
+
+        # Registra o novo nó no nó de referência se for possível realizar uma requisição no nó de referência
+        if response.status_code == 200:
+            nodes = response.json()['nodes']
+            requests.post(f'http://{reference_node}/nodes/register', json={'nodes': [f'http://127.0.0.1:{port}']})
+
+    except requests.exceptions.RequestException as e:
+        print(f"Não foi possível conectar ao nó inicial: {e}")
+
+# Atualizar os nós após a aplicação Flask iniciar
+def update_all():
+    reference_node = "127.0.0.1:5000" # Nó de referência na porta 5000 por padrão
+    try:
+        # Defina o conteúdo da solicitação como JSON
+        headers = {'Content-Type': 'application/json'}
+        data = {'new_node': f'http://127.0.0.1:{port}'}  # Dados a serem enviados no corpo da solicitação, ajuste conforme necessário
+
+        # Envia a solicitação de atualização ao nó de referência
+        response = requests.post(f'http://{reference_node}/nodes/update_all', json=data, headers=headers)
+        if response.status_code == 200:
+            print("Todos os nós foram atualizados com sucesso.")
+        else:
+            print(f"Falha ao atualizar os nós: {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao tentar atualizar os nós: {e}")
+
+# ---------------- Criação de rotas ----------------
 
 # Rota para minerar um novo bloco
 @app.route('/mine', methods=['GET'])
@@ -236,6 +279,47 @@ def consensus():
 
     return jsonify(response), 200
 
+# Rota para retornar todos os nós registrados
+@app.route('/nodes/all', methods=['GET'])
+def get_nodes_blockchain():
+    all_nodes = list(blockchain.get_all_nodes())  # Convertendo para lista para facilitar o retorno em JSON
+    response = {
+        'nodes': all_nodes,
+        'total_nodes': len(all_nodes),
+    }
+    return jsonify(response), 200
+
+# Rota para informar a todos os nós sobre um novo nó utilizando a lista do nó de refrerência como base, assim todos os nós irão se conhecer
+@app.route('/nodes/update_all', methods=['POST'])
+def update_all_nodes():
+    reference_node = "http://127.0.0.1:5000"  # Nó de referência na porta 5000 por padrão
+
+    # Obter a lista de todos os nós do nó de referência, pois ele conhece todos os nós
+    try:
+        response = requests.get(f'{reference_node}/nodes/all')
+        if response.status_code == 200:
+            nodes_from_reference = response.json().get('nodes', [])
+            print(f"Lista de nós do nó de referência obtida: {nodes_from_reference}")
+        else:
+            return f"Erro ao obter a lista de nós do nó de referência: {response.text}", 500
+    except requests.exceptions.RequestException as e:
+        return f"Erro ao conectar ao nó de referência: {e}", 500
+
+    # Atualiza a lista de nós em todos os nós conhecidos
+    for node in nodes_from_reference:
+        try:
+            # Envia a lista completa de nós para cada nó
+            response = requests.post(f'http://{node}/nodes/register', json={'nodes': nodes_from_reference})
+            if response.status_code == 201:
+                print(f"Lista de nós propagada com sucesso para {node}")
+            else:
+                print(f"Falha ao propagar a lista de nós para {node}: {response.text}")
+        except requests.exceptions.RequestException as e:
+            print(f"Erro ao notificar o nó {node}: {e}")
+
+    return jsonify({'message': 'Todos os nós foram atualizados com sucesso com base no nó de referência'}), 200
+
+# ---------------- Main ----------------
 if __name__ == '__main__':
 
     # Definir um argumento opcional para especificar a porta onde a aplicação será executada
@@ -244,5 +328,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
     port = args.port
 
-    # Inicia a aplicação com host e porta definidos
-    app.run(host='0.0.0.0', port=port)
+    # Registrar o próprio nó na lista de nós
+    self_node_address = f'http://127.0.0.1:{port}'
+    blockchain.register_node(self_node_address)
+
+    # Novo nó criado irá informar o nó de referência sobre sua existência
+    connect_nodes_to_reference_node()
+
+    # Inicia o servidor Flask em uma thread separada
+    flask_thread = threading.Thread(target=start_flask, args=(port,))
+    flask_thread.start()
+
+    # Espera para garantir que o Flask está em execução
+    import time
+    time.sleep(2)
+
+    # Atualiza a lista local de nós de todos os nós conectados na rede
+    update_all()
