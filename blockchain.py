@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 import requests
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from argparse import ArgumentParser
 import threading
 
@@ -144,6 +145,7 @@ class Blockchain:
     
 # Criação de um nó Flask para expor a API
 app = Flask(__name__)
+CORS(app)
 
 # Criar endereço único para o nó
 node_identifier = str(uuid4()).replace('-', '')

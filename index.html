@@ -11,6 +11,16 @@
 
     <h1>API Blockchain</h1>
 
+    <!-- Selecionar um nó na rede -->
+    <div class="section">
+        <h2>Selecionar nó</h2>
+        <p>Escolha um nó na rede para realizar operações:</p>
+        <select id="nodeSelect">
+            <option value="">Carregando...</option>
+        </select>
+        <button onclick="getAllNodes()">Buscar nós</button>
+    </div>
+
     <!-- Minerar -->
     <div class="section">
         <h2>Minerar</h2>
