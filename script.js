@@ -53,6 +53,7 @@ async function mineBlock() {
         const selectedNode = getSelectedNode();
         const response = await fetch(`${selectedNode}/mine`);
         const data = await response.json();
+        document.getElementById('output').innerText = ""
         document.getElementById('output').innerText = "Nó: " + selectedNode + "\n" 
         document.getElementById('output').innerText += JSON.stringify(data, null, 2);
     } catch (error) {
@@ -107,6 +108,7 @@ async function resolveConflicts() {
 }
 
 // Resolver conflitos nos nós da rede pelo algoritmo algoritmo de consenso da maioria (50% + 1)
+// TODO: melhorar a visualização do resultado de resolver conflitos
 async function resolveConflictsMajority() {
     try {
         const selectedNode = getSelectedNode();
@@ -124,7 +126,7 @@ async function resolveConflictsMajority() {
                 continue;
             }
             const data = await resolveResponse.json();
-            document.getElementById('output').innerText += "\nResoltado após resolver conflito:\n" + JSON.stringify(data, null, 2);
+            document.getElementById('output').innerText += "\nResultado após resolver conflito:\n" + JSON.stringify(data, null, 2);
         }
     
     }catch (error) {

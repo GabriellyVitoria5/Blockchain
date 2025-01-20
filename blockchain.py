@@ -8,6 +8,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from argparse import ArgumentParser
 import threading
+from collections import Counter
 
 # Classe que implementa a estrutura básica do blockchain
 class Blockchain:
@@ -142,70 +143,63 @@ class Blockchain:
     # Resolver conflitos nas cadeias dos nós pelo algoritmo de consenso da maioria dos nós (50% + 1)
     def resolve_conflicts_majority(self):
         neighbours = self.nodes
-        valid_hashes = {}
-        nodes_chains = []  # Armazenar blockchains dos nós na rede
+        all_chains = []  # Guardar todas as cadeias dos nós na rede
 
-        # Buscar as blockchains dos nós disponíveis na rede
+        # Buscar as cadeias dos nós disponíveis na rede
         for node in neighbours:
             try:
                 response = requests.get(f'http://{node}/chain')
 
-                # Armazenar a blockchain encontrada e calcular as hashes de todos os blocos da cadeia
                 if response.status_code == 200:
+                    length = response.json()['length']
                     chain = response.json()['chain']
-                    nodes_chains.append(chain)
-                    chain_hashes = [self.hash(block) for block in chain]
 
-                    # Armazenar voto e posição nas hashes dos blocos
-                    for index, hash_value in enumerate(chain_hashes):
-
-                        # Hashes encontradas receberão votos e terão sua posição atualizada
-                        if hash_value not in valid_hashes:
-                            valid_hashes[hash_value] = {"votes": 1, "position": index}
-                        else:
-                            valid_hashes[hash_value]["votes"] += 1
-                            valid_hashes[hash_value]["position"] = max(valid_hashes[hash_value]["position"], index)
+                    # Armazenar cadeia e seu tamanho se ela for válida
+                    if self.valid_chain(chain):
+                        all_chains.append((length, chain))  
 
             except Exception as e:
                 print(f"Erro ao conectar com {node}: {e}")
 
-        if not valid_hashes:
+        # Não há cadeia válida, cadeia dos nós não serão atualizadas
+        if not all_chains:
             return False 
 
-        # Encontrar hashes com mais votos
-        max_votes = max(hash_data["votes"] for hash_data in valid_hashes.values())
-        candidate_hashes = [
-            hash_value
-            for hash_value, hash_data in valid_hashes.items()
-            if hash_data["votes"] == max_votes
-        ]
+        # Criar uma lista com todos os tamanhos das cadeias encontradas
+        all_chain_lengths = []
+        for length, chain in all_chains:
+            all_chain_lengths.append(length)
 
-        # Entre as hashes com mais votos, selecionar a mais recente (maior posição)
-        most_valid_hash = max(
-            candidate_hashes,
-            key=lambda h: valid_hashes[h]["position"],
-        )
-        print(f"Hash mais validada: {most_valid_hash} com {max_votes} votos e posição {valid_hashes[most_valid_hash]['position']}.")
+        # Contar quantas vezes cada tamanho aparece, simulando um sistema de votação
+        length_votes = {}
+        for length in all_chain_lengths:
+            if length not in length_votes:
+                length_votes[length] = 1
+            else:
+                length_votes[length] += 1
 
-        # Encontrar todas as blockchains que contêm o bloco de consenso
-        valid_chains = [
-            chain for chain in nodes_chains
-            if most_valid_hash in [self.hash(block) for block in chain]
-        ]
+        # Descobrir o tamanho mais votado, o que mais aparece
+        most_voted_length = max(length_votes, key=length_votes.get)
 
-        if not valid_chains:
-            return False # Nenhuma blockchain contém o bloco de consenso
+        # Filtrar as cadeias que têm o tamanho mais votado
+        valid_chains = []
+        for length, chain in all_chains:
+            if length == most_voted_length:
+                valid_chains.append(chain)
 
-        # Escolher a blockchain mais longa entre as válidas
-        new_chain = max(valid_chains, key=len)
+        # Escolher a cadeia mais longa entre as que têm o tamanho mais votado
+        longest_chain = None
+        longest_length = 0
+        for chain in valid_chains:
+            if len(chain) > longest_length:
+                longest_chain = chain
+                longest_length = len(chain)
 
-        # Substituir a cadeia local se a nova cadeia for mais longa
-        if len(new_chain) > len(self.chain):
-            self.chain = new_chain
-            print("Cadeia substituída pela maioria")
+        # Substituir a cadeia local pela mais votada e longa
+        if len(longest_chain) > len(self.chain):
+            self.chain = longest_chain
             return True
 
-        print("Cadeia atual não foi atualizada.")
         return False
 
     # Retornar todos os nós da cadeia
@@ -412,7 +406,7 @@ if __name__ == '__main__':
 
     # Definir um argumento opcional para especificar a porta onde a aplicação será executada
     parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
+    parser.add_argument('-p', '--port', default=5002, type=int, help='port to listen on')
     args = parser.parse_args()
     port = args.port
 
