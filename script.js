@@ -47,6 +47,7 @@ function getSelectedNode() {
     return `http://${selectedNode}`;
 }
 
+// Iniciar processo de mineraão para criar um bloco com todas as transações feitas e automaticamente resolver conflitos dos nós
 async function mineBlock() {
     try {
         const selectedNode = getSelectedNode();
@@ -56,6 +57,8 @@ async function mineBlock() {
     } catch (error) {
         console.error('Erro ao minerar bloco:', error);
     }    
+
+    resolveConflictsMajority()
 }
 
 // Criar uma transação
@@ -91,9 +94,37 @@ async function getBlockchain() {
     }
 }
 
+// Resolver conflitos usando o algoritmo de consenso de maior cadeia
 async function resolveConflicts() {
     const selectedNode = getSelectedNode();
     const response = await fetch(`${selectedNode}/nodes/resolve`);
     const data = await response.json();
     document.getElementById('output').innerText = JSON.stringify(data, null, 2);
 }
+
+// Resolver conflitos nos nós da rede pelo algoritmo algoritmo de consenso da maioria (50% + 1)
+async function resolveConflictsMajority() {
+    try {
+        const selectedNode = getSelectedNode();
+        const response = await fetch(`${selectedNode}/nodes/all`);
+        if (!response.ok) {
+            throw new Error(`Erro ao buscar nós: ${response.statusText}`);
+        }
+        const data = await response.json();
+        const nodes = data.nodes;
+
+        for (const node of nodes) {
+            const resolveResponse = await fetch(`http://${node}/nodes/resolve/majority`);
+            if (!resolveResponse.ok) {
+                console.warn(`Falha ao resolver conflitos no nó ${node}`);
+                continue;
+            }
+            const data = await resolveResponse.json();
+            document.getElementById('output').innerText += JSON.stringify(data, null, 2);
+        }
+    
+    }catch (error) {
+        console.error(`Erro ao resolver conflitos no nó ${node}:`, error);
+    }
+}
+    
