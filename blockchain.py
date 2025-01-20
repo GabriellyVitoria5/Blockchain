@@ -150,7 +150,7 @@ class Blockchain:
             try:
                 response = requests.get(f'http://{node}/chain')
 
-                # Armazenar a blockchain e encontrada e calcular as hashes de todos os blocos da cadeia
+                # Armazenar a blockchain encontrada e calcular as hashes de todos os blocos da cadeia
                 if response.status_code == 200:
                     chain = response.json()['chain']
                     nodes_chains.append(chain)
@@ -230,10 +230,10 @@ def start_flask(port):
 def connect_nodes_to_reference_node():
     reference_node = "127.0.0.1:5000"  # Nó de referência na porta 5000 por padrão
     try:
-        # Solicita a lista de nós ao nó inicial
+        # Solicitar a lista de nós ao nó inicial
         response = requests.get(f'http://{reference_node}/nodes/all')
 
-        # Registra o novo nó no nó de referência se for possível realizar uma requisição no nó de referência
+        # Registrar o novo nó no nó de referência se nó de referência conseguir receber requisições 
         if response.status_code == 200:
             nodes = response.json()['nodes']
             requests.post(f'http://{reference_node}/nodes/register', json={'nodes': [f'http://127.0.0.1:{port}']})
@@ -241,15 +241,14 @@ def connect_nodes_to_reference_node():
     except requests.exceptions.RequestException as e:
         print(f"Não foi possível conectar ao nó inicial: {e}")
 
-# Atualizar os nós após a aplicação Flask iniciar
+# Atualizar lista de nós conhecidos na rede inteira após a aplicação Flask iniciar
 def update_all():
     reference_node = "127.0.0.1:5000" # Nó de referência na porta 5000 por padrão
     try:
-        # Defina o conteúdo da solicitação como JSON
         headers = {'Content-Type': 'application/json'}
-        data = {'new_node': f'http://127.0.0.1:{port}'}  # Dados a serem enviados no corpo da solicitação, ajuste conforme necessário
+        data = {'new_node': f'http://127.0.0.1:{port}'} 
 
-        # Envia a solicitação de atualização ao nó de referência
+        # Enviar a solicitação de atualização ao nó de referência
         response = requests.post(f'http://{reference_node}/nodes/update_all', json=data, headers=headers)
         if response.status_code == 200:
             print("Todos os nós foram atualizados com sucesso.")
@@ -378,12 +377,12 @@ def get_nodes_blockchain():
     }
     return jsonify(response), 200
 
-# Rota para informar a todos os nós sobre um novo nó utilizando a lista do nó de refrerência como base, assim todos os nós irão se conhecer
+# Rota para informar a todos os nós sobre a chegada de um novo nó utilizando a lista do nó de refrerência como base, assim todos os nós irão se conhecer
 @app.route('/nodes/update_all', methods=['POST'])
 def update_all_nodes():
     reference_node = "http://127.0.0.1:5000"  # Nó de referência na porta 5000 por padrão
 
-    # Obter a lista de todos os nós do nó de referência, pois ele conhece todos os nós
+    # Nó de referência conhece todos os nós, obter a lista de todos os nós da rede por ele
     try:
         response = requests.get(f'{reference_node}/nodes/all')
         if response.status_code == 200:
@@ -394,7 +393,7 @@ def update_all_nodes():
     except requests.exceptions.RequestException as e:
         return f"Erro ao conectar ao nó de referência: {e}", 500
 
-    # Atualiza a lista de nós em todos os nós conhecidos
+    # Atualiza a lista local de nós em todos os nós conhecidos
     for node in nodes_from_reference:
         try:
             # Envia a lista completa de nós para cada nó
