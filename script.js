@@ -53,7 +53,8 @@ async function mineBlock() {
         const selectedNode = getSelectedNode();
         const response = await fetch(`${selectedNode}/mine`);
         const data = await response.json();
-        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+        document.getElementById('output').innerText = "Nó: " + selectedNode + "\n" 
+        document.getElementById('output').innerText += JSON.stringify(data, null, 2);
     } catch (error) {
         console.error('Erro ao minerar bloco:', error);
     }    
@@ -76,7 +77,9 @@ async function createTransaction() {
         });
 
         const data = await response.json();
-        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+
+        document.getElementById('output').innerText = "Nó: " + selectedNode + "\n"
+        document.getElementById('output').innerText += JSON.stringify(data, null, 2);
     } catch (error) {
         console.error('Erro ao criar transação:', error);
     }
@@ -88,7 +91,8 @@ async function getBlockchain() {
         const selectedNode = getSelectedNode();
         const response = await fetch(`${selectedNode}/chain`);
         const data = await response.json();
-        document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+        document.getElementById('output').innerText = "Nó: " + selectedNode + "\n"
+        document.getElementById('output').innerText += JSON.stringify(data, null, 2);
     } catch (error) {
         console.error('Erro ao obter a blockchain:', error);
     }
@@ -120,11 +124,16 @@ async function resolveConflictsMajority() {
                 continue;
             }
             const data = await resolveResponse.json();
-            document.getElementById('output').innerText += JSON.stringify(data, null, 2);
+            document.getElementById('output').innerText += "\nResoltado após resolver conflito:\n" + JSON.stringify(data, null, 2);
         }
     
     }catch (error) {
         console.error(`Erro ao resolver conflitos no nó ${node}:`, error);
     }
+}
+
+// Limpar conteúdo dos resoltados na saída 
+function cleanOutput(){
+    document.getElementById('output').innerText = ""
 }
     
