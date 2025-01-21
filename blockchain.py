@@ -166,10 +166,8 @@ class Blockchain:
         if not all_chains:
             return False 
 
-        # Criar uma lista com todos os tamanhos das cadeias encontradas
-        all_chain_lengths = []
-        for length, chain in all_chains:
-            all_chain_lengths.append(length)
+        # Lista com todos os tamanhos das cadeias encontradas
+        all_chain_lengths = [length for length, chain in all_chains]
 
         # Contar quantas vezes cada tamanho aparece, simulando um sistema de votação
         length_votes = {}
@@ -179,22 +177,14 @@ class Blockchain:
             else:
                 length_votes[length] += 1
 
-        # Descobrir o tamanho mais votado, o que mais aparece
+        # Descobrir qual foi o tamanho mais votado (o que mais aparece)
         most_voted_length = max(length_votes, key=length_votes.get)
 
         # Filtrar as cadeias que têm o tamanho mais votado
-        valid_chains = []
-        for length, chain in all_chains:
-            if length == most_voted_length:
-                valid_chains.append(chain)
+        valid_chains = [chain for length, chain in all_chains if length == most_voted_length]
 
-        # Escolher a cadeia mais longa após o filtro de votação
-        longest_chain = None
-        longest_length = 0
-        for chain in valid_chains:
-            if len(chain) > longest_length:
-                longest_chain = chain
-                longest_length = len(chain)
+        # Escolher a cadeia mais longa após o filtro de votação. OBS: em caso de empate, a função max retorna a primeira cadeia mais longa
+        longest_chain = max(valid_chains, key=len)
 
         # Substituir a cadeia local pela mais votada e longa
         if len(longest_chain) > len(self.chain):
