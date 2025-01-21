@@ -117,6 +117,9 @@ async function resolveConflictsMajority() {
         const data = await response.json();
         const nodes = data.nodes;
 
+        let message = ""
+        let finalMessage = ""
+
         for (const node of nodes) {
             const resolveResponse = await fetch(`http://${node}/nodes/resolve/majority`);
             if (!resolveResponse.ok) {
@@ -124,7 +127,20 @@ async function resolveConflictsMajority() {
                 continue;
             }
             const data = await resolveResponse.json();
-            document.getElementById('output-conflict').innerText = "Resultado após resolver conflito:\n" + JSON.stringify(data, null, 2);
+            
+            message = JSON.stringify(data, null, 2)
+            if(message.includes('A cadeia de todos os nós foi substituída pela cadeia válida e mais longa')){
+                finalMessage = message
+            }
+            
+            //document.getElementById('output-conflict').innerText = "Resultado após resolver conflito:\n" + JSON.stringify(data, null, 2);
+        }
+
+        if(finalMessage.length != 0){
+            document.getElementById('output-conflict').innerText = "Resultado após resolver conflito:\n" + finalMessage;
+        }
+        else{
+            document.getElementById('output-conflict').innerText = "Resultado após resolver conflito:\n" + message;
         }
     
     }catch (error) {
