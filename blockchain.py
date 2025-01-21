@@ -141,11 +141,12 @@ class Blockchain:
         return False
 
     # Resolver conflitos nas cadeias dos nós pelo algoritmo de consenso da maioria dos nós (50% + 1)
+    # A nova cadeia será a maior mais votada (que mais aparece)
     def resolve_conflicts_majority(self):
         neighbours = self.nodes
-        all_chains = []  # Guardar todas as cadeias dos nós na rede
+        all_chains = []  
 
-        # Buscar as cadeias dos nós disponíveis na rede
+        # Buscar as cadeias dos nós disponíveis na rede e armazenar somente as válidas
         for node in neighbours:
             try:
                 response = requests.get(f'http://{node}/chain')
@@ -154,7 +155,7 @@ class Blockchain:
                     length = response.json()['length']
                     chain = response.json()['chain']
 
-                    # Armazenar cadeia e seu tamanho se ela for válida
+                    # Armazenar cadeia e seu tamanho 
                     if self.valid_chain(chain):
                         all_chains.append((length, chain))  
 
@@ -187,7 +188,7 @@ class Blockchain:
             if length == most_voted_length:
                 valid_chains.append(chain)
 
-        # Escolher a cadeia mais longa entre as que têm o tamanho mais votado
+        # Escolher a cadeia mais longa após o filtro de votação
         longest_chain = None
         longest_length = 0
         for chain in valid_chains:
@@ -355,7 +356,7 @@ def consensus_majority():
         }
     else:
         response = {
-            'message': 'A cadeia está completa',
+            'message': 'A cadeia atual está completa e não será atualizada',
             'chain': blockchain.chain
         }
 
@@ -406,7 +407,7 @@ if __name__ == '__main__':
 
     # Definir um argumento opcional para especificar a porta onde a aplicação será executada
     parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5002, type=int, help='port to listen on')
+    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
     args = parser.parse_args()
     port = args.port
 

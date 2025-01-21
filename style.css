@@ -44,7 +44,13 @@ button:hover {
     background-color: #0056b3;
 }
 
-#output {
+.output-container {
+    display: flex;
+    gap: 10px; 
+}
+
+.output-container div{
+    flex: 1; 
     white-space: pre-wrap;
     background: #f4f4f4;
     padding: 10px;

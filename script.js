@@ -108,8 +108,8 @@ async function resolveConflicts() {
 }
 
 // Resolver conflitos nos nós da rede pelo algoritmo algoritmo de consenso da maioria (50% + 1)
-// TODO: melhorar a visualização do resultado de resolver conflitos
 async function resolveConflictsMajority() {
+    console.log("Resolvendo conflitos...")
     try {
         const selectedNode = getSelectedNode();
         const response = await fetch(`${selectedNode}/nodes/all`);
@@ -126,7 +126,7 @@ async function resolveConflictsMajority() {
                 continue;
             }
             const data = await resolveResponse.json();
-            document.getElementById('output').innerText += "\nResultado após resolver conflito:\n" + JSON.stringify(data, null, 2);
+            document.getElementById('output-conflict').innerText = "Resultado após resolver conflito:\n" + JSON.stringify(data, null, 2);
         }
     
     }catch (error) {
@@ -134,8 +134,20 @@ async function resolveConflictsMajority() {
     }
 }
 
+// Resolver conflitos de 30 em 30 segundos
+function startResolveConflictsInterval() {
+    resolveConflictsMajority();
+    setInterval(resolveConflictsMajority, 30000);
+}
+
 // Limpar conteúdo dos resoltados na saída 
 function cleanOutput(){
     document.getElementById('output').innerText = ""
 }
+
+// Inicair resolver conflitos de 30 em 30 segundos ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    startResolveConflictsInterval();
+});
+
     
