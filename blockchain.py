@@ -8,7 +8,6 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from argparse import ArgumentParser
 import threading
-from collections import Counter
 
 # Classe que implementa a estrutura básica do blockchain
 class Blockchain:
@@ -46,6 +45,7 @@ class Blockchain:
         self.current_transactions = []
 
         self.chain.append(block)
+        #self.resolve_conflicts_majority # Resolver conflitos depois de minerar ficou por conta do JS
         return block
 
     # Cria uma nova transação que será incluída no próximo bloco minerado
@@ -242,6 +242,20 @@ def update_all():
     except requests.exceptions.RequestException as e:
         print(f"Erro ao tentar atualizar os nós: {e}")
 
+# Resolver conflitos na cadeia de 30 em 30 segundos
+def resolve_conflict_majority_periodically():
+    while True:
+        try:
+            replaced = blockchain.resolve_conflicts_majority()
+            if replaced:
+                print("A cadeia foi substituída pela mais votada e válida.")
+            else:
+                print("A cadeia atual está completa e não precisou ser substituída.")
+        except Exception as e:
+            print(f"Erro ao executar o consenso de maioria: {e}")
+
+        time.sleep(30)
+
 # ---------------- Criação de rotas ----------------
 
 # Rota para minerar um novo bloco
@@ -341,7 +355,7 @@ def consensus_majority():
 
     if replaced:
         response = {
-            'message': 'A cadeia foi substituída',
+            'message': 'A cadeia de todos os nós foi substituída pela cadeia válida e mais longa',
             'new_chain': blockchain.chain
         }
     else:
@@ -413,8 +427,12 @@ if __name__ == '__main__':
     flask_thread.start()
 
     # Espera para garantir que o Flask está em execução
-    import time
     time.sleep(2)
 
     # Atualiza a lista local de nós de todos os nós conectados na rede
     update_all()
+
+    # Criar uma thread separada para resolver conflitos na cadeia de 30 em 30 segundos
+    resolve_majority_thread = threading.Thread(target=resolve_conflict_majority_periodically)
+    resolve_majority_thread.daemon = True  
+    resolve_majority_thread.start()

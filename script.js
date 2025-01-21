@@ -1,22 +1,21 @@
-const baseUrl = 'http://127.0.0.1:5000';
+const referenceUrl = 'http://127.0.0.1:5000';
 
-// Mostrar todos os nós disponíveis na rede em um combo box
+// Mostrar todos os nós disponíveis na rede em um combo box usando a lista do nós conhecidos do nó de referência
 async function getAllNodes() {
 
     // Fazer uma requisição ao nó de referência para obter todos os nós
     try {
-        const response = await fetch(`${baseUrl}/nodes/all`);
+        const response = await fetch(`${referenceUrl}/nodes/all`);
         if (!response.ok) {
             throw new Error(`Erro ao buscar nós: ${response.statusText}`);
         }
 
+        // Nós obtidos na busca
         const data = await response.json();
         const nodes = data.nodes;
 
-        // Seleciona o combo box no HTML
+        // Pegando o elemento html do combo box
         const comboBox = document.getElementById('nodeSelect');
-
-        // Remove as opções existentes
         comboBox.innerHTML = '';
 
         // Adiciona uma opção padrão
@@ -109,7 +108,6 @@ async function resolveConflicts() {
 
 // Resolver conflitos nos nós da rede pelo algoritmo algoritmo de consenso da maioria (50% + 1)
 async function resolveConflictsMajority() {
-    console.log("Resolvendo conflitos...")
     try {
         const selectedNode = getSelectedNode();
         const response = await fetch(`${selectedNode}/nodes/all`);
@@ -134,20 +132,10 @@ async function resolveConflictsMajority() {
     }
 }
 
-// Resolver conflitos de 30 em 30 segundos
-function startResolveConflictsInterval() {
-    resolveConflictsMajority();
-    setInterval(resolveConflictsMajority, 30000);
-}
-
 // Limpar conteúdo dos resoltados na saída 
 function cleanOutput(){
-    document.getElementById('output').innerText = ""
+    document.getElementById('output').innerText = "Resultado das operações vai aparecer aqui..."
+    document.getElementById('output-conflict').innerText = "Resultado de resolvendo conflitos vai aparecer aqui..."
 }
-
-// Inicair resolver conflitos de 30 em 30 segundos ao carregar a página
-document.addEventListener('DOMContentLoaded', () => {
-    startResolveConflictsInterval();
-});
 
     
